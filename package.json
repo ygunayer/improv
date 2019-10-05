@@ -1,0 +1,26 @@
+{
+  "name": "@ygunayer/improv",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tsc": "tsc",
+    "dist": "",
+    "demo:basic": "tsc && node dist/demo/basic.js",
+    "demo:pokemon": "tsc && node dist/demo/pokemon.js",
+    "demo:ask": "tsc && node dist/demo/ask.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "12.7.11",
+    "@ygunayer/patmat": "0.1.2",
+    "lodash": "4.17.15",
+    "nanoid": "2.1.2"
+  },
+  "devDependencies": {
+    "typescript": "^3.6.4"
+  }
+}
