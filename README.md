@@ -10,8 +10,10 @@ TODO
 
 ## Style
 improv's style of implementation is a middleground between Erlang's and Akka's
-- Supervision is built-in like Akka
-- Actor implementations are simple one-off and they don't loop by themselves. This is in contrast to Akka where actors are implemented in an object-oriented nature, and receive blocks are actually overridden functions that loop by default. Continuations are a combination of Akka and Erlang, where an actor can repeat its current behavior (like Erlang loops), change it to something else (like `become/unbecome` from Akka), or stop itself (like stop calls from both Akka and Erlang)
+- Supervision is built-in like Akka (NOT YET IMPLEMENTED)
+- Actor implementations are simple one-off functions and they don't loop by themselves.
+    - This is in contrast to Akka where actors are implemented in an object-oriented nature, and receive blocks are actually overridden functions that loop by default.
+    - Continuations are a combination of Akka and Erlang, where an actor can repeat its current behavior (like Erlang loops), change it to something else (like `become/unbecome` from Akka), or stop itself (like stop calls from both Akka and Erlang)
 - Unlike Akka, there's no `ask(msg: any): Promise<any>` method
 
 ## TODO
