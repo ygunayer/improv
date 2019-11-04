@@ -18,6 +18,13 @@ improv's style of implementation is a middleground between Erlang's and Akka's
 
 ## TODO
 - !!! WRITE TESTS !!!
+- Implement supervision
+- Implement `receive()` timeouts
+- (Maybe) Implement built-in ask pattern
+    - Requirements:
+        - Custom `send()` messages received through `context`
+        - Inject an `ActorRef` named `sender` that can be replied to
+        - A global dead letter actor which will be used as the `sender` for messages sent outside a `context`
 
 ## License
 MIT
