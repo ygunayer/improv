@@ -1,6 +1,3 @@
-import * as Actor from './actor';
-import * as MessageBox from './message-box';
-import * as Scheduler from './scheduler';
-import * as System from './system';
+import {createSystem as internalCreateSystem} from './internal/system';
 
-export = {Actor, MessageBox, Scheduler, System};
+export const createSystem = internalCreateSystem;
