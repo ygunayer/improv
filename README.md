@@ -20,6 +20,7 @@ improv's style of implementation is a middleground between Erlang's and Akka's
 - !!! WRITE TESTS !!!
 - Implement supervision
 - Implement `receive()` timeouts
+- Prevent multiple scheduler calls from creating unnecessary work load
 - (Maybe) Implement built-in ask pattern
     - Requirements:
         - Custom `send()` messages received through `context`
