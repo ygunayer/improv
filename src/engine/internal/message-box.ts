@@ -55,6 +55,11 @@ export interface MessageBox<T> {
    * @param message the message to insert
    */
   unshift(message: T): void;
+
+  /**
+   * Returns whether or not the box is empty
+   */
+  isEmpty(): boolean;
 }
 
 /**
@@ -140,7 +145,11 @@ export function createMessageBox<T>(): MessageBox<T> {
     oldWait.reject(new MessageBoxPaused());
   }
 
+  function isEmpty() {
+    return messages.length == 0;
+  }
+
   waitUntilResumed.resolve();
 
-  return {push, pop, resume, stop, pause, unshift};
+  return {push, pop, resume, stop, pause, unshift, isEmpty};
 }
