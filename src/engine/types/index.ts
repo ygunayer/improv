@@ -185,7 +185,17 @@ export interface ActorSystem {
   ec(): ExecutionContext;
 
   /**
-   * Returns the dead letter actor of the system
+   * Returns a reference to the root actor for actors spawned internally by the system
+   */
+  systemRoot(): ActorRef;
+
+  /**
+   * Returns a reference to the root actor for actors spawned by the user code
+   */
+  userRoot(): ActorRef;
+
+  /**
+   * Returns the reference to the dead letter actor of the system
    */
   deadLetter(): ActorRef;
 }

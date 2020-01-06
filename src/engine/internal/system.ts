@@ -37,7 +37,9 @@ export function createSystem({name, executionContext = DefaultExecutionContext}:
 
     onShutdown: (fn: (reason: any) => any) => shutdownEvents.on('shutdown', fn),
 
-    deadLetter: () => deadLetterActor
+    systemRoot: () => systemActor,
+    userRoot: () => userActor,
+    deadLetter: () => deadLetterActor    
   };
 
   const rootActor: ActorRef = {

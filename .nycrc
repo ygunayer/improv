@@ -1,5 +1,6 @@
 {
   "extends": "@istanbuljs/nyc-config-typescript",
   "all": true,
-  "exclude": ["src/demo", "dist/demo", "test/"]
+  "exclude": ["src/demo", "dist/demo", "test/"],
+  "reporter": ["html", "text"]
 }

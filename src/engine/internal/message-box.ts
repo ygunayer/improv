@@ -113,7 +113,8 @@ export function createMessageBox<T>(): MessageBox<T> {
   }
 
   function stop() {
-    if (isStopped) return;
+    if (isStopped) return [];
+    isStopped = true;
 
     const oldMessages = [].concat(messages);
     const oldWait = waitUntilNonEmpty;

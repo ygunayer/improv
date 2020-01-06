@@ -6,6 +6,6 @@ const Empty: Receive = toReceive(
   [_, () => {}]
 );
 
-export default function empty() {
+export default function empty(): Receive {
   return Empty;
 };

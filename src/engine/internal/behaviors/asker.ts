@@ -3,9 +3,9 @@ import {defer, toReceive, TimedOut, randomId} from '../../../lib/utils';
 import {ActorContext, ActorSpawnArgs, ActorProps, ActorRef} from '../../types';
 import {ReceiveTimeout} from '../../messages/actor';
 
-export type Asker = {promise: PromiseLike<any>, args: ActorSpawnArgs}
+export type Asker = {promise: Promise<any>, args: ActorSpawnArgs}
 
-export function asker(message: any, timeout: number, target: ActorRef) {
+export function asker(message: any, timeout: number, target: ActorRef): Asker {
   const d = defer<any>();
 
   function create(context: ActorContext): ActorProps {

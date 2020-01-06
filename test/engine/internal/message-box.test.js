@@ -139,7 +139,7 @@ describe('engine/internal/message-box', () => {
       await d.promise;
       watch.assert();
     });
-    
+
     it('should cause pop calls to wait forever (exec order: pop, pause, push)', async () => {
       const box = createMessageBox();
       const d = defer();
@@ -154,6 +154,133 @@ describe('engine/internal/message-box', () => {
 
       await d.promise;
       watch.assert();
+    });
+
+    it('should cause pop calls to wait forever (exec order: pause, pop, pause, push)', async () => {
+      const box = createMessageBox();
+      const d = defer();
+
+      box.pause();
+
+      box.pop()
+        .then(r => d.reject(new Error(`pop() should have failed but got ${r}`)));
+
+      box.pause();
+      box.push(42);
+
+      const watch = stopwatch(() => d.resolve());
+
+      await d.promise;
+      watch.assert();
+    });
+  });
+
+
+  describe('resume', () => {
+    it('should resolve pop calls immediately (exec order: pause, pop, push, resume)', async () => {
+      const expected = 42;
+      const box = createMessageBox();
+      const d = defer();
+      const d2 = defer();
+      box.pause();
+
+      box.pop().then(r => d2.resolve(r));
+      box.push(expected);
+
+      const watch = stopwatch(() => d.resolve());
+
+      await d.promise;
+      watch.assert();
+      box.resume();
+      const actual = await d2.promise;
+      expect(actual).to.equal(expected);
+    });
+
+    it('should resolve pop calls immediately (exec order: pause, pop, push, resume)', async () => {
+      const expected = 42;
+      const box = createMessageBox();
+      const d = defer();
+      const d2 = defer();
+      box.pause();
+
+      box.pop().then(r => d2.resolve(r));
+      box.push(expected);
+
+      const watch = stopwatch(() => d.resolve());
+
+      await d.promise;
+      watch.assert();
+      box.resume();
+      box.resume();
+      const actual = await d2.promise;
+      expect(actual).to.equal(expected);
+    });
+
+    it('should resolve pop calls immediately (exec order: pause, push, resume, pop)', async () => {
+      const expected = 42;
+      const box = createMessageBox();
+      const d = defer();
+
+      box.pause();
+      box.push(expected);
+      box.resume();
+      box.pop().then(r => d.resolve(r));
+
+      const actual = await d.promise;
+      expect(actual).to.equal(expected);
+    });
+
+    it('should resolve pop calls immediately (exec order: pause, resume, push, pop)', async () => {
+      const expected = 42;
+      const box = createMessageBox();
+      const d = defer();
+
+      box.pause();
+      box.resume();
+      box.push(expected);
+      box.pop().then(r => d.resolve(r));
+
+      const actual = await d.promise;
+      expect(actual).to.equal(expected);
+    });
+
+    it('should have no effect if not paused', async () => {
+      const box = createMessageBox();
+      const expected = 42;
+      box.resume();
+      box.push(expected);
+      const actual = await box.pop();
+      expect(box.isEmpty()).to.be.true;
+      expect(actual).to.equal(expected);
+    });
+  });
+
+
+  describe('stop', () => {
+    it('should prevent from accepting more messages', async () => {
+      const box = createMessageBox();
+      const expected = 42;
+      box.push(expected);
+      const actual = box.stop();
+      expect([expected]).to.deep.equal(actual);
+      expect(box.isEmpty(), 'box should now be empty').to.be.true;
+      box.push('foo');
+      box.unshift('baz');
+      expect(box.isEmpty(), 'box should still be empty').to.be.true;
+    });
+
+    it('should have no effect if already stopped', async () => {
+      const box = createMessageBox();
+      const expected = 42;
+      box.push(expected);
+      const actual = box.stop();
+      expect([expected]).to.deep.equal(actual);
+      expect(box.isEmpty(), 'box should now be empty').to.be.true;
+      box.push('foo');
+      box.unshift('baz');
+      expect(box.isEmpty(), 'box should still be empty').to.be.true;
+      const actual2 = box.stop();
+      expect(actual2.length).to.equal(0);
     });
   });
 
