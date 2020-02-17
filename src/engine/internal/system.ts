@@ -2,7 +2,7 @@ import {spawn, InternalActorRef} from './actor';
 import {_} from '@ygunayer/patmat';
 import {EventEmitter} from 'events';
 import {Default as DefaultExecutionContext} from '../generic/execution-context';
-import {ActorRef, ActorSystem, ActorProps, ActorSpawnArgs} from '../types';
+import {ActorRef, ActorSystem, ActorSpawnArgs} from '../types';
 import {ExecutionContext} from '../types/generic';
 import {createRootNode} from './path';
 import empty from './behaviors/empty';
@@ -42,15 +42,20 @@ export function createSystem({name, executionContext = DefaultExecutionContext}:
     deadLetter: () => deadLetterActor    
   };
 
-  const rootActor: ActorRef = {
+  const rootActor: InternalActorRef = {
     path: () => rootPath,
     send: () => {},
     tell: () => {},
-    ask: () => Promise.reject()
+    ask: () => Promise.reject(),
+    start: () => {},
+    stop: () => {},
+    restart: () => {},
+    isTerminated: () => isTerminated,
+    setActor: () => {}
   };
-  const userActor: ActorRef = spawn(system, rootActor, {receive: empty(), name: 'user'});
-  const systemActor: ActorRef = spawn(system, rootActor, {receive: empty(), name: 'system'});
-  const deadLetterActor: ActorRef = spawn(system, systemActor, {receive: deadLetter(), name: 'deadLetters'});
+  const userActor: InternalActorRef = spawn(system, rootActor, {receive: empty(), name: 'user'});
+  const systemActor: InternalActorRef = spawn(system, rootActor, {receive: empty(), name: 'system'});
+  const deadLetterActor: InternalActorRef = spawn(system, systemActor, {receive: deadLetter(), name: 'deadLetters'});
   logger.debug('System created');
 
   return system;

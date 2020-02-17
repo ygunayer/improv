@@ -8,15 +8,60 @@ import {createActorScheduler} from './scheduler';
 import {ActorContext, ActorRef, ActorSystem, ActorProps, Receive, ActorSpawnArgs, ActorLifecycleHooks} from '../types';
 import {InternalActorPath} from './path';
 import {oneForOneStrategy} from './supervision';
-import {FailureCounter} from './supervision/tools';
+import {FailureCounter, failureCounter} from './supervision/tools';
 import createLogger from '../../lib/logger';
 import {asker} from './behaviors/asker';
 
-export interface InternalActorRef extends ActorRef {
+interface InternalActorRef extends ActorRef {
+  
+}
+
+module InternalActorRef {
+  export function from(ref: ActorRef): InternalActorRef {
+    return {
+      ...ref
+    };
+  }
+}
+
+module PublicActorRef {
+  export function from(ref: InternalActorRef): ActorRef {
+    return {
+      path: () => ref.path(),
+      send: (msg: any) => ref.send(msg),
+      tell: (msg: any, sender: ActorRef) => ref.tell(msg, sender),
+      ask: (msg: any, timeout: number) => ref.ask(msg, timeout)
+    }
+  }
+}
+
+export interface Actor {
+  /**
+   * Starts the actor's lifecyle
+   */
   start(): void;
+
+  /**
+   * Stops the actor and all of its children recursively
+   * 
+   * @param reason the stop reason
+   */
   stop(reason?: any): void;
+
+  /**
+   * Restarts the actor and all of its children recursively
+   */
   restart(): void;
+
+  /**
+   * Returns whether or not the actor is terminated
+   */
   isTerminated(): boolean;
+
+  /**
+   * Returns the actor's context
+   */
+  context(): ActorContext;
 }
 
 const EmptyHooks: ActorLifecycleHooks = {
@@ -29,7 +74,87 @@ const EmptyHooks: ActorLifecycleHooks = {
 /**
  * Spawns a process that handles the given function.
  */
-export function spawn(system: ActorSystem, parentRef: ActorRef, args: ActorSpawnArgs): InternalActorRef {
+export function spawn(system: ActorSystem, parentRef: InternalActorRef, args: ActorSpawnArgs): InternalActorRef {
+  let actor: Actor;
+  const {name} = args;
+  const path = (parentRef.path() as InternalActorPath).add(name);
+  const messageBox = createMessageBox<Envelope>();
+  const logger = createLogger(`actor:${name}`);
+
+  const refPublic: ActorRef = {
+    path: () => path,
+    send: (message: any) => refPublic.tell(message, system.deadLetter()),
+    tell: (message: any, sender: ActorRef) => {
+      const envelope = Envelope.create({
+        sender,
+        recipient: refPublic,
+        message
+      });
+      messageBox.push(envelope);
+    },
+    ask: (message: any, timeout: number): Promise<any> => {
+      const {promise, args} = asker(message, timeout, refPublic);
+      system.spawn(args);
+      return promise;
+    }
+  };
+  const refInternal: InternalActorRef = InternalActorRef.from(refPublic);
+
+  function createActor(): Actor {
+    type ChildEntry = {key: string, ref: InternalActorRef, counter: FailureCounter};
+    const children = new Map<string, ChildEntry>();
+
+    const context: ActorContext = {
+      name: () => name,
+      path: () => path,
+      system: () => system,
+      self: () => refPublic,
+      parent: () => parentRef,
+      children: () => Array.from(children.values()).map(c => PublicActorRef.from(c.ref)),
+      supervisionStrategy: () => actor.supervisionStrategy(),
+      become: (receive: Receive) => {
+        if (isTerminated) {
+          throw new Error('Actor is terminated');
+        }
+
+        logger.debug(`Actor is now becoming ${receive}`);
+        scheduler.become(wrapReceive(receive));
+      },
+      stop: (reason?: any) => actor.stop(reason),
+      spawn: (args: ActorSpawnArgs) => {
+        if (isTerminated) {
+          throw new Error('Cannot spawn from a terminated actor');
+        }
+
+        return spawn(system, refInternal, args);
+      },
+      sender: () => system.deadLetter(), // this method gets overwritten every time a message is received
+    };
+
+    function start() {
+
+    }
+
+    function stop(reason: any) {
+      path.dispose();
+    }
+
+    function restart() {
+
+    }
+
+    let isTerminated = false;
+    const scheduler = createActorScheduler({system, context, messageBox});
+
+    return {start, stop, restart, isTerminated: () => isTerminated, context: () => context};
+  }
+
+  actor = createActor();
+  actor.start();
+  return refInternal;
+}
+
+function spawn2(system: ActorSystem, parentRef: ActorRef, args: ActorSpawnArgs): InternalActorRef {
   type ChildEntry = {key: string, ref: InternalActorRef, counter: FailureCounter};
 
   let isTerminated = false;

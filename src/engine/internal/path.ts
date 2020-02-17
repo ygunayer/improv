@@ -7,7 +7,7 @@ export interface InternalActorPath extends ActorPath {
    * 
    * @param name the name of the child to add
    */
-  add(name: string): ActorPath;
+  add(name: string): InternalActorPath;
 
   /**
    * Removes the child with the given name
@@ -15,6 +15,11 @@ export interface InternalActorPath extends ActorPath {
    * @param name the name of the child to remove
    */
   remove(name: string);
+
+  /**
+   * Disposes of the path, releasing it from the parent
+   */
+  dispose();
 }
 
 export function createNode(name: string, parent: ActorPath): InternalActorPath {
@@ -45,6 +50,7 @@ export function createNode(name: string, parent: ActorPath): InternalActorPath {
     remove: name => {
       delete children[name];
     },
+    dispose: () => (parent as InternalActorPath).remove(name),
     toString: () => `${parentString}/${name}`
   };
 
