@@ -2,7 +2,6 @@ import {_} from '@ygunayer/patmat';
 import {randomId, toReceive} from '../../lib/utils';
 import {createMessageBox} from './message-box';
 import * as ActorMessages from '../messages/actor';
-import * as SystemMessages from './messages';
 import {Envelope} from './messages';
 import {createActorScheduler} from './scheduler';
 import {ActorContext, ActorRef, ActorSystem, ActorProps, Receive, ActorSpawnArgs, ActorLifecycleHooks} from '../types';
@@ -11,6 +10,12 @@ import {oneForOneStrategy} from './supervision';
 import {FailureCounter, failureCounter} from './supervision/tools';
 import createLogger from '../../lib/logger';
 import {asker} from './behaviors/asker';
+
+const SystemMessages = {
+  Stop: Symbol(),
+  Start: Symbol(),
+  Restart: Symbol()
+};
 
 interface InternalActorRef extends ActorRef {
   
@@ -76,6 +81,7 @@ const EmptyHooks: ActorLifecycleHooks = {
  */
 export function spawn(system: ActorSystem, parentRef: InternalActorRef, args: ActorSpawnArgs): InternalActorRef {
   let actor: Actor;
+  let lastReceive: Receive = null;
   const {name} = args;
   const path = (parentRef.path() as InternalActorPath).add(name);
   const messageBox = createMessageBox<Envelope>();
@@ -103,6 +109,22 @@ export function spawn(system: ActorSystem, parentRef: InternalActorRef, args: Ac
   function createActor(): Actor {
     type ChildEntry = {key: string, ref: InternalActorRef, counter: FailureCounter};
     const children = new Map<string, ChildEntry>();
+
+    const handleInternalMessages: Receive = toReceive(
+      [SystemMessages.Stop, () => {}],
+      [SystemMessages.Start, () => {}],
+      [SystemMessages.Restart, () => {}]
+    );
+
+    const handleSupervision: Receive = toReceive(
+
+    );
+
+    function wrapReceive(receive: Receive): Receive {
+      return handleInternalMessages
+        .orElse(handleSupervision)
+        .orElse(receive);
+    }
 
     const context: ActorContext = {
       name: () => name,
@@ -132,7 +154,7 @@ export function spawn(system: ActorSystem, parentRef: InternalActorRef, args: Ac
     };
 
     function start() {
-
+      scheduler.start(lastReceive);
     }
 
     function stop(reason: any) {
@@ -145,6 +167,9 @@ export function spawn(system: ActorSystem, parentRef: InternalActorRef, args: Ac
 
     let isTerminated = false;
     const scheduler = createActorScheduler({system, context, messageBox});
+    const props = typeof args === 'function' ? args(context) : args;
+
+    lastReceive = lastReceive || props.receive;
 
     return {start, stop, restart, isTerminated: () => isTerminated, context: () => context};
   }
